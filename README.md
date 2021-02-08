@@ -1,1 +1,1 @@
-# sweet-bs-backend
+# The Backend for Sweet B's Store
