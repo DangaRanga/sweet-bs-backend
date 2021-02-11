@@ -31,9 +31,7 @@ class FlaskApp(Flask):
         view_function = view.as_view(endpoint)
 
         # Setting up URL rule for GET Method without priamry key
-        self.add_url_rule(
-            url,
-            view_func=view_function, methods=['GET'])
+        self.add_url_rule(url,view_func=view_function, methods=['GET'])
 
         # Setting up URL rule for POST Method
         self.add_url_rule(url, view_func=view_function, methods=['POST'])
