@@ -8,11 +8,19 @@ import os
 class Config():
     """Primary class for configuration."""
 
-    CSRF_ENABLED = True
+    # Flask Config
+    FLASK_ENV = os.environ.get('FLASK_ENV')
+
+    # JWT Config
     SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DB_URI")
     JWT_ACCESS_LIFESPAN = {'hours': 24}
     JWT_REFRESH_LIFESPAN = {'days': 30}
+
+    # SQL Alchemy config
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DB_URI")
+
+    # Security config
+    CSRF_ENABLED = True
 
     def __init__(self, debug_mode=True):
         """Initialize class."""

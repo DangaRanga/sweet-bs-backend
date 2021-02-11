@@ -4,7 +4,7 @@
 from flask import Flask
 
 # User module imports
-from api.views.views import UserAPI, OrdersAPI, IngredientsAPI
+from api.routes.routes import UserAPI, OrdersAPI, IngredientsAPI
 
 
 class FlaskApp(Flask):
@@ -26,7 +26,7 @@ class FlaskApp(Flask):
 
         # Setting up URL rule for GET Method with priamry key
         self.add_url_rule(
-            url, defaults={p_key: None},
+            url,
             view_func=view_function, methods=['GET'])
 
         # Setting up URL rule for POST Method
@@ -38,7 +38,7 @@ class FlaskApp(Flask):
                           methods=['GET', 'DELETE', 'PUT'])
 
     def register_apis(self):
-        view_lst = [UserAPI, OrdersAPI, IngredientsAPI]
+        view_lst = [UserAPI]
         for view in view_lst:
             self.register_api(view, view.endpoint, view.url, view.p_key)
 
