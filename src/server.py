@@ -5,6 +5,7 @@ from flask import Flask
 
 # User module imports
 from api.routes.routes import UserAPI, OrdersAPI, IngredientsAPI
+from config import config
 
 
 class FlaskApp(Flask):
@@ -38,7 +39,7 @@ class FlaskApp(Flask):
                           methods=['GET', 'DELETE', 'PUT'])
 
     def register_apis(self):
-        view_lst = [UserAPI]
+        view_lst = [UserAPI, OrdersAPI, IngredientsAPI]
         for view in view_lst:
             self.register_api(view, view.endpoint, view.url, view.p_key)
 

@@ -41,19 +41,25 @@ class User(db.Model):
         nullable=False
     )
 
-    authenticated = db.Column(
+    is_admin = db.Column(
         db.Boolean,
-        default=False)
+        default=False
+    )
 
-    # Administrative fields
+    # Fields for JWT
+    public_id = db.Column(
+        db.String(50),
+        unique=True
+    )
 
-    # To easily allow for users to be deleted based on their date
-    created_on = db.Column(
+    created_on = db.Column(     # To easily allow for users to be deleted based on their date
         db.DateTime,
         index=False,
         unique=False,
         nullable=True
     )
+
+    # Class methods
 
     def set_password(self, password):
         """Create hashed password."""
@@ -68,12 +74,29 @@ class User(db.Model):
 
 
 class Order(db.Model):
+
+    __tablename__ = 'orders'
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    complete = db.Column(
+        db.Boolean,
+        default=False
+    )
+
+    user_id = db.Column(
+        db.Integer,
+        nullable=False,
+        unique=False
+    )
+
+
+class Ingredient():
     pass
 
 
-class Ingredient(db.Model):
-    pass
-
-
-class MenuItem(db.Model):
+class MenuItem():
     pass

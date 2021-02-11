@@ -1,5 +1,14 @@
 """Defines the serverside routes for the application."""
+# Standard Imports
+import os
+import sys
+
+# Flask Imports
+from flask import request, jsonify
 from flask.views import MethodView
+
+# Set up user module imports from root directory of project
+from api.db.queries import UserQueries
 
 
 class UserAPI(MethodView):
@@ -10,7 +19,7 @@ class UserAPI(MethodView):
 
     def __init__(self):
         """Initializes the class"""
-        pass
+        self.query_obj = UserQueries()
 
     def get(self, user_id=None):
         """Method for retrieving data
@@ -19,25 +28,28 @@ class UserAPI(MethodView):
             user_id: The id of the desired user
 
         Returns:
-            The data for the specified user, or all users from the database
+            The a json object of a specific user
         """
         if user_id is None:
             # Fetches all users
-            return "Testing User API"
+            return jsonify({'users': self.query_obj.fetch_all_users()})
         else:
             # Fetch based on user
-            return "Hey im a user"
+            return "Some specific user"
 
     def post(self):
-        """Method for adding data to the database
+        """Method for adding a user to the database
 
         Args:
             None
 
         Returns:
-            status_code
+            A status code of 200
         """
-        pass
+        user_data = request.get_json()
+        self.query_obj.create_user(user_data)
+
+        return jsonify({'status': 200})
 
     def delete(self, id):
         """Method for deleting an item based on its id
