@@ -1,8 +1,9 @@
 """Defines the database classes."""
 from enum import unique
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import backref
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 # Initialize the SQLAlchemy object
 db = SQLAlchemy()
@@ -76,8 +77,12 @@ class User(db.Model):
         db.DateTime,
         index=False,
         unique=False,
-        nullable=True
+        nullable=True,
+        default = datetime.now()
     )
+
+    orders_placed = db.relationship("Order", cascade="all, delete", backref="user")
+
 
     # Class methods
 
@@ -107,7 +112,9 @@ class Order(db.Model):
         default=False
     )
 
-    items = relationship("OrderItem", cascade="all, delete")
+    items = db.relationship("OrderItem", cascade="all, delete", backref="order")
+
+    user_id = db.Column(db.Integer,db.ForeignKey('users.id'))
 
 
 class Ingredient(db.Model):
@@ -154,9 +161,9 @@ class MenuItem(db.Model):
         db.String(225)
     )
 
-    ingredients = relationship("Ingredient", secondary=menuitems_ingredients)
+    ingredients = db.relationship("Ingredient", secondary=menuitems_ingredients, backref="related_menuitems")
 
-    orderitems = relationship("OrderItem", cascade="all, delete")
+    orderitems = db.relationship("OrderItem", cascade="all, delete", backref="order_menuitems")
 
 
 class OrderItem(db.Model):

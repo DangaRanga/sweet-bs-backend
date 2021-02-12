@@ -5,9 +5,9 @@ from flask import Flask
 import os
 
 # User module imports
-from src.api.routes.routes import UserAPI, OrdersAPI, IngredientsAPI
-from src.api.db.schema import db
-from .config.config import Config, app_config
+from api.routes.routes import UserAPI, OrdersAPI, IngredientsAPI
+from api.db.schema import db
+from config.config import Config, app_config
 
 
 class FlaskApp(Flask):
@@ -25,7 +25,6 @@ class FlaskApp(Flask):
 
         # Initialize the SQLAlchemy Database
         db.init_app(self)
-        print(os.environ.get("SQLALCHEMY_DATABASE_URI"))
         with self.app_context():
             db.create_all()
 

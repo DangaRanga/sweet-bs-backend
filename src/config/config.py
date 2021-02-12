@@ -1,9 +1,5 @@
 """For configuring the application."""
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
 # Standard imports
 import os
 from dotenv import load_dotenv
