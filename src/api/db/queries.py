@@ -3,7 +3,7 @@
 import uuid
 
 # User Module imports
-from schema import db, User
+from .schema import db, User
 
 
 class UserQueries():

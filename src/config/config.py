@@ -1,4 +1,9 @@
 """For configuring the application."""
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # Standard imports
 import os
 
@@ -17,7 +22,7 @@ class Config():
     JWT_REFRESH_LIFESPAN = {'days': 30}
 
     # SQL Alchemy config
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DB_URI")
+    SQLALCHEMY_DATABASE_URI = os.environ.get("SQLALCHEMY_DATABASE_URI")
 
     # Security config
     CSRF_ENABLED = True
@@ -26,8 +31,7 @@ class Config():
         """Initialize class."""
         self.debug_mode = debug_mode
 
-
-app_conig = {
+app_config = {
     'development': Config(),
     'production': Config(False)
 }

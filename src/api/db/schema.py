@@ -1,5 +1,7 @@
 """Defines the database classes."""
+from enum import unique
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # Initialize the SQLAlchemy object
@@ -9,7 +11,7 @@ db = SQLAlchemy()
 class User(db.Model):
     """Database model for a User."""
 
-    __tablename__ = 'user'
+    __tablename__ = 'users'
 
     def __init__(self, email, password, name):
         self.email = email
@@ -22,7 +24,7 @@ class User(db.Model):
     )
 
     # Authentication fields
-    name = db.Column(
+    username = db.Column(
         db.String(100),
         unique=True,
         nullable=False
@@ -39,6 +41,24 @@ class User(db.Model):
         primary_key=False,
         unique=False,
         nullable=False
+    )
+
+    firstname = db.Column(
+        db.String(100),
+        primary_key=False,
+        unique=False,
+        nullable=False
+    )
+
+    lastname = db.Column(
+        db.String(100),
+        primary_key=False,
+        unique=False,
+        nullable=False
+    )
+
+    address = db.Column(
+        db.String(225)
     )
 
     is_admin = db.Column(
@@ -87,16 +107,71 @@ class Order(db.Model):
         default=False
     )
 
-    user_id = db.Column(
+    items = relationship("OrderItem", cascade="all, delete")
+
+
+class Ingredient(db.Model):
+    __tablename__ = 'ingredients'
+
+    id = db.Column(
         db.Integer,
-        nullable=False,
-        unique=False
+        primary_key=True
+    )
+
+    name = db.Column(
+        db.String(50)
     )
 
 
-class Ingredient():
-    pass
+menuitems_ingredients = db.Table('menuitems_ingredients', db.Model.metadata, db.Column(
+    'menuitem_id', db.Integer, db.ForeignKey('menuitems.id')),
+    db.Column('ingredient_id', db.Integer, db.ForeignKey('ingredients.id')))
 
 
-class MenuItem():
-    pass
+class MenuItem(db.Model):
+
+    __tablename__ = 'menuitems'
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    name = db.Column(
+        db.String(50),
+        unique=True
+    )
+
+    price = db.Column(
+        db.Numeric(10, 2)
+    )
+
+    description = db.Column(
+        db.String(225)
+    )
+
+    imageUrl = db.Column(
+        db.String(225)
+    )
+
+    ingredients = relationship("Ingredient", secondary=menuitems_ingredients)
+
+    orderitems = relationship("OrderItem", cascade="all, delete")
+
+
+class OrderItem(db.Model):
+
+    __tablename__ = 'orderitems'
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    qty = db.Column(
+        db.Integer
+    )
+
+    order_id = db.Column(db.Integer, db.ForeignKey("orders.id"))
+
+    menuitem_id = db.Column(db.Integer, db.ForeignKey("menuitems.id"))

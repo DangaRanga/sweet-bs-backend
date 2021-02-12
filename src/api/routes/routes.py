@@ -8,7 +8,7 @@ from flask import request, jsonify
 from flask.views import MethodView
 
 # Set up user module imports from root directory of project
-from api.db.queries import UserQueries
+from src.api.db.queries import UserQueries
 
 
 class UserAPI(MethodView):

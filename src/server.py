@@ -4,8 +4,9 @@
 from flask import Flask
 
 # User module imports
-from api.routes.routes import UserAPI, OrdersAPI, IngredientsAPI
-from config import config
+from src.api.routes.routes import UserAPI, OrdersAPI, IngredientsAPI
+from .config import config
+from src.api.db.schema import db
 
 
 class FlaskApp(Flask):
@@ -14,6 +15,7 @@ class FlaskApp(Flask):
         # Inherit class methods from Flask
         super(FlaskApp, self).__init__(import_name)
         self.register_apis()
+        self.config.from_object(config.app_config)
 
     def register_api(self, view, endpoint, url, p_key='id', p_key_type='int'):
         """Generalized method for registering new views/API endpoints
@@ -44,6 +46,10 @@ class FlaskApp(Flask):
             self.register_api(view, view.endpoint, view.url, view.p_key)
 
 
+
+app = FlaskApp(__name__)
+db.init_app(app)
+
 if __name__ == '__main__':
-    app = FlaskApp(__name__)
+    
     app.run(host='0.0.0.0', port=8080)
