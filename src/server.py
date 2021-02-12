@@ -23,14 +23,17 @@ class FlaskApp(Flask):
         Args:
             view: The MethodView object
             endpoint: The endpoint for the api
+            url: The url string for the api
+            p_key: The field for the primary key of the database entry for the
+                    api
 
+        Returns:
+            None
         """
         view_function = view.as_view(endpoint)
 
-        # Setting up URL rule for GET Method with priamry key
-        self.add_url_rule(
-            url,
-            view_func=view_function, methods=['GET'])
+        # Setting up URL rule for GET Method without priamry key
+        self.add_url_rule(url,view_func=view_function, methods=['GET'])
 
         # Setting up URL rule for POST Method
         self.add_url_rule(url, view_func=view_function, methods=['POST'])
