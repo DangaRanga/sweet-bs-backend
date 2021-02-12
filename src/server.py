@@ -2,10 +2,12 @@
 
 # Flask imports
 from flask import Flask
+import os
 
 # User module imports
 from api.routes.routes import UserAPI, OrdersAPI, IngredientsAPI
-from config import config
+from config.config import Config
+from api.db.schema import db
 
 
 class FlaskApp(Flask):
@@ -13,7 +15,18 @@ class FlaskApp(Flask):
     def __init__(self, import_name):
         # Inherit class methods from Flask
         super(FlaskApp, self).__init__(import_name)
+
+        # Configure the Flask app
+        self.config.from_object(Config)
+
+        # Register the endpoints for the routes
         self.register_apis()
+
+        # Initialize the SQLAlchemy Database
+        db.init_app(self)
+        print(os.environ.get("SQLALCHEMY_DATABASE_URI"))
+        with self.app_context():
+            db.create_all()
 
     def register_api(self, view, endpoint, url, p_key='id', p_key_type='int'):
         """Generalized method for registering new views/API endpoints
@@ -31,7 +44,7 @@ class FlaskApp(Flask):
         view_function = view.as_view(endpoint)
 
         # Setting up URL rule for GET Method without priamry key
-        self.add_url_rule(url,view_func=view_function, methods=['GET'])
+        self.add_url_rule(url, view_func=view_function, methods=['GET'])
 
         # Setting up URL rule for POST Method
         self.add_url_rule(url, view_func=view_function, methods=['POST'])
