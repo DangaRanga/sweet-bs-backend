@@ -1,101 +1,61 @@
-"""Defines the serverside routes for the application."""
-# Standard Imports
-import os
-import sys
+from marshmallow.fields import Integer
+from api.db.models import IngredientModel, IngredientSchema, MenuItemModel, MenuItemSchema, OrderModel, OrderSchema, UserSchema, UserModel, app
+from flask import jsonify
 
-# Flask Imports
-from flask import request, jsonify
-from flask.views import MethodView
+class Routes():
 
-# Set up user module imports from root directory of project
-from api.db.queries import UserQueries
-
-
-class UserAPI(MethodView):
-    """Defines the API methods for a User"""
-    endpoint = 'user_api'
-    url = '/users'
-    p_key = 'user_id'
-
-    def __init__(self):
-        """Initializes the class"""
-        self.query_obj = UserQueries()
-
-    def get(self, user_id=None):
-        """Method for retrieving data
-
-        Args:
-            user_id: The id of the desired user
-
-        Returns:
-            The a json object of a specific user
-        """
-        if user_id is None:
-            # Fetches all users
-            return jsonify({'users': self.query_obj.fetch_all_users()})
+    @staticmethod
+    @app.route("/users", methods=['GET'])
+    def get_all_users():
+        users = UserModel.query.all()
+        user_schema = UserSchema(many=True)
+        if users is None:
+            response = {
+                "message":"no users found",
+            }
+            return jsonify(response)
         else:
-            # Fetch based on user
-            return "Some specific user"
+            response = user_schema.dump(users)
+            return jsonify(response)
 
-    def post(self):
-        """Method for adding a user to the database
+    @staticmethod
+    @app.route("/orders", methods=['GET'])
+    def get_all_orders():
+        orders = OrderModel.query.all()
+        order_schema = OrderSchema(many=True)
+        if orders is None:
+            response = {
+                "message":"no orders found",
+            }
+            return jsonify(response)
+        else:
+            response = order_schema.dump(orders)
+            return jsonify(response)
 
-        Args:
-            None
+    @staticmethod
+    @app.route("/menuitems", methods=['GET'])
+    def get_all_menuitems():
+        menuitems = MenuItemModel.query.all()
+        menuitem_schema = MenuItemSchema(many=True)
+        if menuitems is None:
+            response = {
+                "message":"no menuitems found",
+            }
+            return jsonify(response)
+        else:
+            response = menuitem_schema.dump(menuitems)
+            return jsonify(response)
 
-        Returns:
-            A status code of 200
-        """
-        user_data = request.get_json()
-        self.query_obj.create_user(user_data)
-
-        return jsonify({'status': 200})
-
-    def delete(self, id):
-        """Method for deleting an item based on its id
-
-        Args:
-            id
-
-        Returns:
-            status_code
-        """
-        pass
-
-    def put(self, id):
-        """Method for updating user data
-
-        Args:
-            id
-        """
-        pass
-
-
-class OrdersAPI(MethodView):
-    endpoint = 'order_api'
-    url = '/orders'
-    p_key = 'order_id'
-
-    def __init__(self):
-        """Initializes the class"""
-        pass
-
-
-class IngredientsAPI(MethodView):
-    endpoint = 'ingredients_api'
-    url = '/ingredients'
-    p_key = 'ingredient_id'
-
-    def __init__(self):
-        """Initializes the class"""
-        pass
-
-
-class MenuItemAPI(MethodView):
-    endpoint = 'menuitem_api'
-    url = '/menuitems'
-    p_key = 'menu_item_id'
-
-    def __init__(self):
-        """Initializes the class"""
-        pass
+    @staticmethod
+    @app.route("/ingredients", methods=['GET'])
+    def get_all_ingredients():
+        ingredients = IngredientModel.query.all()
+        ingredient_schema = IngredientSchema(many=True)
+        if ingredients is None:
+            response = {
+                "message":"no ingredients found",
+            }
+            return jsonify(response)
+        else:
+            response = ingredient_schema.dump(ingredients)
+            return jsonify(response)
