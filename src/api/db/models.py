@@ -66,7 +66,7 @@ class UserModel(app.db.Model):
     public_id = app.db.Column(
         app.db.String(50),
         unique=True,
-        default=uuid.uuid4()
+        default=uuid.uuid4
     )
 
     created_on = app.db.Column(     # To easily allow for users to be deleted based on their date
