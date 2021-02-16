@@ -7,6 +7,14 @@ class Routes():
     @staticmethod
     @app.route("/users", methods=['GET'])
     def get_all_users():
+        """Queries the User table for all users
+
+        Args:
+            None
+
+        Returns:
+            A json object containing all users
+        """
         users = UserModel.query.all()
         user_schema = UserSchema(many=True)
         if users is None:
@@ -21,6 +29,14 @@ class Routes():
     @staticmethod
     @app.route("/orders", methods=['GET'])
     def get_all_orders():
+        """Queries the Orders table for all orders.
+
+        Args: 
+            None
+
+        Returns:
+            A json object containing all orders
+        """
         orders = OrderModel.query.all()
         order_schema = OrderSchema(many=True)
         if orders is None:
@@ -35,6 +51,14 @@ class Routes():
     @staticmethod
     @app.route("/menuitems", methods=['GET'])
     def get_all_menuitems():
+        """Queries the MenuItem table for all menuitems
+
+        Args:
+            None
+
+        Returns:
+            A json object containing all menuitems
+        """
         menuitems = MenuItemModel.query.all()
         menuitem_schema = MenuItemSchema(many=True)
         if menuitems is None:
@@ -49,6 +73,14 @@ class Routes():
     @staticmethod
     @app.route("/ingredients", methods=['GET'])
     def get_all_ingredients():
+        """Queries the Ingredients table for all ingredients
+
+        Args:
+            None
+
+        Returns:
+            A json object containing all ingredients
+        """
         ingredients = IngredientModel.query.all()
         ingredient_schema = IngredientSchema(many=True)
         if ingredients is None:
