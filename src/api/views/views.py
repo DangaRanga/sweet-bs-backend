@@ -1,5 +1,5 @@
 from flask_admin import Admin
-from api.db.models import IngredientModel, MenuItemModel, OrderItemModel, OrderModel, UserModel
+from api.db.models import IngredientModel, MenuItemCategoryModel, MenuItemModel, OrderItemModel, OrderModel, UserModel
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.model.form import InlineFormAdmin
 
@@ -17,6 +17,7 @@ class Views:
         self.admin.add_view(self.MenuItemView(MenuItemModel, app.db.session))
         self.admin.add_view(self.OrderView(OrderModel, app.db.session))
         self.admin.add_view(self.OrderItemView(OrderItemModel, app.db.session))
+        self.admin.add_view(self.MenuItemCategoryView(MenuItemCategoryModel, app.db.session))
 
     class IngredientView(ModelView):
         column_display_all_relations = True
@@ -30,6 +31,7 @@ class Views:
         column_exclude_list = ['orderitems', ]
         column_display_pk = True
         form_excluded_columns = ['orderitems', ]
+        column_list= ('id','flavour','category','price','description', 'image_url','ingredients')
 
     class OrderItemView(ModelView):
         column_default_sort = 'id'
@@ -70,3 +72,9 @@ class Views:
         column_formatters = {
           '_password': lambda v,c,m,p : m.password[:4] + "..." +m.password[-3:]
         }
+
+    class MenuItemCategoryView(ModelView):
+        column_default_sort = 'id'
+        column_display_all_relations = True
+        column_display_pk = True
+        form_excluded_columns = ['menuitems']
