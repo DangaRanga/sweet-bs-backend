@@ -142,7 +142,7 @@ class MenuItemCategoryModel(app.db.Model):
         nullable=False
     )
 
-    menuitems = app.db.relationship("MenuItemModel",cascade="all, delete", backref="category")
+    menuitems = app.db.relationship("MenuItemModel",cascade="all, delete", backref="category", lazy="joined")
     
     def __repr__(self) -> str:
         return f"{self.category}"
@@ -257,7 +257,7 @@ class MenuItemSchema(app.ma.SQLAlchemyAutoSchema):
         model = MenuItemModel
 
     ingredients = app.ma.Nested(IngredientSchema, default=[], many=True)
-
+    category = fields.String(attribute="category")
 
 class OrderItemSchema(app.ma.SQLAlchemyAutoSchema):
     class Meta:
@@ -289,3 +289,9 @@ class UserSchema(app.ma.SQLAlchemyAutoSchema):
 
     password = fields.String(attribute='_password')
     orders_placed = fields.Integer(attribute='orders_placed')
+
+class MenuItemCategorySchema(app.ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = MenuItemCategoryModel
+
+    menuitems = app.ma.Nested(MenuItemSchema, many=True, default=[])

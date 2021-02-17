@@ -1,5 +1,5 @@
 from marshmallow.fields import Integer
-from api.db.models import IngredientModel, IngredientSchema, MenuItemModel, MenuItemSchema, OrderModel, OrderSchema, UserSchema, UserModel, app
+from api.db.models import IngredientModel, IngredientSchema, MenuItemCategoryModel, MenuItemCategorySchema, MenuItemModel, MenuItemSchema, OrderModel, OrderSchema, UserSchema, UserModel, app
 from flask import jsonify
 
 class Routes():
@@ -35,7 +35,7 @@ class Routes():
     @staticmethod
     @app.route("/menuitems", methods=['GET'])
     def get_all_menuitems():
-        menuitems = MenuItemModel.query.all()
+        menuitems = MenuItemModel.query.join(MenuItemCategoryModel,MenuItemModel.category_id==MenuItemCategoryModel.id)
         menuitem_schema = MenuItemSchema(many=True)
         if menuitems is None:
             response = {
@@ -58,4 +58,18 @@ class Routes():
             return jsonify(response)
         else:
             response = ingredient_schema.dump(ingredients)
+            return jsonify(response)
+
+    @staticmethod
+    @app.route("/menuitems/category", methods=['GET'])
+    def get_menuitems_by_category():
+        menuitems = MenuItemCategoryModel.query.all()
+        category_schema = MenuItemCategorySchema(many=True)
+        if menuitems is None:
+            response = {
+                "message":"no menuitems found",
+            }
+            return jsonify(response)
+        else:
+            response = category_schema.dump(menuitems)
             return jsonify(response)
