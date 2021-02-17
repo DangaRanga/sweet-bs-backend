@@ -1,9 +1,7 @@
 from flask_admin import Admin
 from api.db.models import IngredientModel, MenuItemModel, OrderItemModel, OrderModel, UserModel
-#from api.routes.routes import app
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.model.form import InlineFormAdmin
-from jinja2 import Markup
 
 from app import FlaskApp
 
@@ -57,7 +55,7 @@ class Views:
         column_default_sort = 'id'
         column_display_all_relations = True
         column_display_pk = True
-        form_columns= ('firstname','lastname','email','username','password','address','is_admin', 'created_on')
+        form_columns= ('firstname','lastname','email','username','password','address','is_admin', 'created_on',"public_id")
         
         form_excluded_columns = ['orders_placed', ]
         
