@@ -151,6 +151,10 @@ class MenuItemModel(app.db.Model):
 
     __tablename__ = 'menuitems'
 
+    __table_args__ = (
+        app.db.UniqueConstraint('flavour','category_id'),
+    )
+
     id = app.db.Column(
         app.db.Integer,
         primary_key=True

@@ -19,6 +19,7 @@ class FlaskApp(Flask):
         self.db = SQLAlchemy(self)
         self.ma = Marshmallow(self)
         self.bcrypt = Bcrypt(self)
+        
 
     def db_create_all(self):
         with self.app_context():
