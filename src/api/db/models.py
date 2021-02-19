@@ -142,10 +142,10 @@ class MenuItemCategoryModel(app.db.Model):
         nullable=False
     )
 
-    menuitems = app.db.relationship("MenuItemModel",cascade="all, delete", backref="category", lazy="joined")
+    menuitems = app.db.relationship("MenuItemModel",cascade="all, delete", backref="category")
     
     def __repr__(self) -> str:
-        return f"{self.category}"
+        return f"{self.name}"
 
 class MenuItemModel(app.db.Model):
 
