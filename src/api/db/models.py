@@ -1,13 +1,16 @@
 
 """Defines the database classes."""
-from enum import unique
+# SQL Alchemy imports
 from sqlalchemy.orm import backref
-#from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
-import uuid
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
 
+# Python imports
+from datetime import datetime
+import uuid
+# from enum import unique
+
+# User module imports
 from app import FlaskApp
 
 # Initialize the App object
@@ -38,7 +41,7 @@ class UserModel(app.db.Model):
     )
 
     _password = app.db.Column(
-        "password",
+        'password',
         app.db.String(128),
         nullable=False,
     )
@@ -78,11 +81,12 @@ class UserModel(app.db.Model):
     )
 
     orders_placed = app.db.relationship(
-        "OrderModel", cascade="all, delete, delete-orphan", backref="user")
+        'OrderModel', cascade='all, delete, delete-orphan', backref='user')
 
     @hybrid_property
     def password(self):
         return self._password
+
     # Class methods
 
     def __repr__(self) -> str:
@@ -91,7 +95,9 @@ class UserModel(app.db.Model):
     @password.setter
     def password(self, password):
         """Create hashed password."""
-        self._password = app.bcrypt.generate_password_hash(password)
+
+        self._password = app.bcrypt.generate_password_hash(
+            password).decode('utf8')  # Decoding so it doesn't get saved as binary
 
     @hybrid_method
     def check_password(self, password):
@@ -116,7 +122,8 @@ class OrderModel(app.db.Model):
     items = app.db.relationship(
         "OrderItemModel", cascade="all, delete", backref="order")
 
-    user_id = app.db.Column(app.db.Integer, app.db.ForeignKey('users.id'),nullable=False)
+    user_id = app.db.Column(
+        app.db.Integer, app.db.ForeignKey('users.id'), nullable=False)
 
     def __repr__(self) -> str:
         return f"Order #{self.id}"

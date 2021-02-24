@@ -2,9 +2,8 @@
 
 # Standard imports
 import os
+import secrets
 from dotenv import load_dotenv
-
-# Flask imports
 
 
 class Config():
@@ -18,7 +17,7 @@ class Config():
     FLASK_ADMIN_SWATCH = 'cerulean'
 
     # JWT Config
-    SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
+    SECRET_KEY = secrets.token_urlsafe(30)
     JWT_ACCESS_LIFESPAN = {'hours': 24}
     JWT_REFRESH_LIFESPAN = {'days': 30}
 
@@ -30,13 +29,13 @@ class Config():
     # Security config
     CSRF_ENABLED = True
     BCRYPT_LOG_ROUNDS = 15
-    SESSION_TYPE= os.environ.get("SESSION_TYPE")
-    SECRET_KEY=os.environ.get("SECRET_KEY")
-
+    SESSION_TYPE = os.environ.get("SESSION_TYPE")
+    SECRET_KEY = os.environ.get("SECRET_KEY")
 
     def __init__(self, debug_mode=True):
         """Initialize class."""
         self.debug_mode = debug_mode
+
 
 app_config = {
     'development': Config(),
