@@ -8,9 +8,7 @@ from sqlalchemy import event, text
 # Python imports
 from datetime import datetime
 import uuid
-from datetime import datetime
 from enum import unique
-import uuid
 
 # User module imports
 from app import FlaskApp
@@ -29,7 +27,7 @@ class UserModel(app.db.Model):
         primary_key=True
     )
 
-    # Authentication fields
+    # Identification fields: Username, Email, Password
     username = app.db.Column(
         app.db.String(100),
         unique=True,
@@ -48,6 +46,7 @@ class UserModel(app.db.Model):
         nullable=False,
     )
 
+    # Personal details, name and address
     firstname = app.db.Column(
         app.db.String(100),
         nullable=False
@@ -62,6 +61,7 @@ class UserModel(app.db.Model):
         app.db.String(225)
     )
 
+    # Authorization fields
     is_admin = app.db.Column(
         app.db.Boolean,
         default=False
@@ -74,7 +74,8 @@ class UserModel(app.db.Model):
         default=uuid.uuid4
     )
 
-    created_on = app.db.Column(     # To easily allow for users to be deleted based on their date
+    # To easily allow for users to be deleted based on their date
+    created_on = app.db.Column(
         app.db.DateTime,
         index=False,
         unique=False,
@@ -84,7 +85,7 @@ class UserModel(app.db.Model):
 
     _orders_placed = app.db.relationship(
         "OrderModel", cascade="all, delete, delete-orphan", backref="user")
-    
+
     # Class methods
 
     @hybrid_property
@@ -110,6 +111,7 @@ class UserModel(app.db.Model):
     def orders_placed(self):
         return len(self._orders_placed)
 
+
 class IngredientModel(app.db.Model):
     __tablename__ = 'ingredients'
 
@@ -128,12 +130,13 @@ class IngredientModel(app.db.Model):
         return f"{self.name}"
 
 
-menuitems_ingredients = app.db.Table('menuitems_ingredients',
-                                     app.db.Model.metadata,
-                                     app.db.Column(
-                                         'menuitem_id', app.db.Integer, app.db.ForeignKey('menuitems.id')),
-                                     app.db.Column(
-                                         'ingredient_id', app.db.Integer, app.db.ForeignKey('ingredients.id')))
+menuitems_ingredients = app.db.Table(
+    'menuitems_ingredients', app.db.Model.metadata,
+    app.db.Column(
+        'menuitem_id', app.db.Integer, app.db.ForeignKey('menuitems.id')),
+    app.db.Column(
+        'ingredient_id', app.db.Integer, app.db.ForeignKey('ingredients.id')))
+
 
 class MenuItemCategoryModel(app.db.Model):
 
@@ -150,10 +153,13 @@ class MenuItemCategoryModel(app.db.Model):
         nullable=False
     )
 
-    menuitems = app.db.relationship("MenuItemModel",cascade="all, delete", backref="category", lazy="joined")
-    
+    menuitems = app.db.relationship(
+        "MenuItemModel",
+        cascade="all, delete", backref="category", lazy="joined")
+
     def __repr__(self) -> str:
         return f"{self.category}"
+
 
 class MenuItemModel(app.db.Model):
 
@@ -189,7 +195,8 @@ class MenuItemModel(app.db.Model):
     )
 
     ingredients = app.db.relationship(
-        "IngredientModel", secondary=menuitems_ingredients, backref="related_menuitems")
+        "IngredientModel",
+        secondary=menuitems_ingredients, backref="related_menuitems")
 
     orderitems = app.db.relationship(
         "OrderItemModel", cascade="all, delete", backref="menuitem")
@@ -267,6 +274,7 @@ class MenuItemSchema(app.ma.SQLAlchemyAutoSchema):
     ingredients = app.ma.Nested(IngredientSchema, default=[], many=True)
     category = fields.String(attribute="category")
 
+
 class OrderItemSchema(app.ma.SQLAlchemyAutoSchema):
     class Meta:
         model = OrderItemModel
@@ -279,12 +287,12 @@ class OrderItemSchema(app.ma.SQLAlchemyAutoSchema):
 class OrderSchema(app.ma.SQLAlchemyAutoSchema):
     class Meta:
         model = OrderModel
-        exclude=("user_id",)
+        exclude = ("user_id",)
 
     class OrderUserSchema(app.ma.SQLAlchemyAutoSchema):
         class Meta:
             model = UserModel
-            exclude=("_password",)
+            exclude = ("_password",)
 
     items = app.ma.Nested(OrderItemSchema, default=[], many=True)
     user = app.ma.Nested(OrderUserSchema)
@@ -297,6 +305,7 @@ class UserSchema(app.ma.SQLAlchemyAutoSchema):
 
     password = fields.String(attribute='_password')
     orders_placed = fields.Integer(attribute='orders_placed')
+
 
 class MenuItemCategorySchema(app.ma.SQLAlchemyAutoSchema):
     class Meta:

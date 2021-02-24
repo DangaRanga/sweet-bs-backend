@@ -116,7 +116,7 @@ class Routes():
     @staticmethod
     @app.route("/signup", methods=['POST'])
     def signup():
-        """Retrieves details to sign a user up
+        """Route to retrieve details to signup a user up
 
         Args:
             None
