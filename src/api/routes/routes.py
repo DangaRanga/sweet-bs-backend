@@ -109,6 +109,34 @@ class Routes():
                 {'WWW-Authenticate': 'Basic realm="Wrong password"'}
             )
 
+    @staticmethod
+    @app.route("/signup", methods=['POST'])
+    def signup():
+        """Retrieves details to sign a user up
+
+        Args:
+            None
+
+        Returns:
+            response_code: 201 if the registration is succesful
+                           401 if the user already exists
+        """
+
+        # Retrieve signup details from form
+        req = request.get_json(force=True)
+
+        # TODO - Extract form data to create a user @Deniz
+        username = req.get('username')
+
+        # Check if the user already exists
+        user = UserModel.query.filter_by(username=username).first()
+
+        # Create and insert new user
+        if user is None:
+
+            return make_response('Successfully registered.', 201)
+        return make_response('User already exists. Please Log in', 401)
+
     @ staticmethod
     @ app.route("/users", methods=['GET'])
     @ token_required
