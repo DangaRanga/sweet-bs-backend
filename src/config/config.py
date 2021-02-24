@@ -17,7 +17,7 @@ class Config():
     FLASK_ADMIN_SWATCH = 'cerulean'
 
     # JWT Config
-    SECRET_KEY = secrets.token_urlsafe(30)
+    SECRET_KEY = os.environ.get('SECRET_KEY')
     JWT_ACCESS_LIFESPAN = {'hours': 24}
     JWT_REFRESH_LIFESPAN = {'days': 30}
 

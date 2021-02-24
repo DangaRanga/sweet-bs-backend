@@ -3,23 +3,22 @@ from flask import jsonify, request, make_response, request
 
 # Database importsfrom marshmallow.fields import Integer
 from api.db.models import (
-    IngredientModel, 
-    IngredientSchema, 
-    MenuItemCategoryModel, 
-    MenuItemCategorySchema, 
-    MenuItemModel, 
-    MenuItemSchema, 
-    OrderModel, 
-    OrderSchema, 
-    UserSchema, 
-    UserModel, 
+    IngredientModel,
+    IngredientSchema,
+    MenuItemCategoryModel,
+    MenuItemCategorySchema,
+    MenuItemModel,
+    MenuItemSchema,
+    OrderModel,
+    OrderSchema,
+    UserSchema,
+    UserModel,
     app)
 
 
-
 # JWT Authentication Imports
-from functools import wraps
 import jwt
+from jwt.exceptions import InvalidSignatureError
 from datetime import datetime, timedelta
 from method_decorator import method_decorator
 
@@ -50,7 +49,7 @@ class Routes():
                 current_user = UserModel.query.filter_by(
                     public_id=data.get('public_id')).first()
 
-            except:
+            except InvalidSignatureError:
                 return jsonify({'message': 'Token is invalid'}), 401
 
             return method_decorator.__call__(
@@ -100,8 +99,9 @@ class Routes():
 
             # Generate the JWT Token
             token = jwt.encode({
-                'public id': user.public_id,
-                'exp': datetime.utcnow() + timedelta(hours=expiry_time)
+                'public_id': user.public_id,
+                'exp': datetime.utcnow() + timedelta(hours=expiry_time),
+                'admin': user.is_admin
             }, app.config.get('SECRET_KEY'))
 
             return make_response(jsonify(
@@ -153,6 +153,7 @@ class Routes():
         Returns:
             A json object containing all users
         """
+        print(current_user.username)
         users = UserModel.query.all()
         user_schema = UserSchema(many=True)
         if users is None:
@@ -242,7 +243,7 @@ class Routes():
         category_schema = MenuItemCategorySchema(many=True)
         if menuitems is None:
             response = {
-                "message":"no menuitems found",
+                "message": "no menuitems found",
             }
             return jsonify(response)
         else:
