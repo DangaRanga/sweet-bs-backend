@@ -30,7 +30,6 @@ class Config():
     CSRF_ENABLED = True
     BCRYPT_LOG_ROUNDS = 15
     SESSION_TYPE = os.environ.get("SESSION_TYPE")
-    SECRET_KEY = os.environ.get("SECRET_KEY")
 
     def __init__(self, debug_mode=True):
         """Initialize class."""
