@@ -1,7 +1,9 @@
 # Flask imports
 from flask import jsonify, request, make_response, request
 
-# Database importsfrom marshmallow.fields import Integer
+# Database imports
+
+from marshmallow.fields import Integer
 from api.db.models import (
     IngredientModel,
     IngredientSchema,
@@ -194,7 +196,10 @@ class Routes():
         Returns:
             A json object containing all menuitems
         """
-        menuitems = MenuItemModel.query.all()
+        menuitems = MenuItemModel.query.join(
+            MenuItemCategoryModel,
+            MenuItemModel.category_id == MenuItemCategoryModel.id)
+
         menuitem_schema = MenuItemSchema(many=True)
         if menuitems is None:
             response = {
@@ -226,4 +231,18 @@ class Routes():
             return jsonify(response)
         else:
             response = ingredient_schema.dump(ingredients)
+            return jsonify(response)
+
+    @staticmethod
+    @app.route("/menuitems/category", methods=['GET'])
+    def get_menuitems_by_category():
+        menuitems = MenuItemCategoryModel.query.all()
+        category_schema = MenuItemCategorySchema(many=True)
+        if menuitems is None:
+            response = {
+                "message":"no menuitems found",
+            }
+            return jsonify(response)
+        else:
+            response = category_schema.dump(menuitems)
             return jsonify(response)
