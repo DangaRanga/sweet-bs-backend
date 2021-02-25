@@ -2,7 +2,6 @@
 
 # Standard imports
 import os
-import secrets
 from dotenv import load_dotenv
 
 
