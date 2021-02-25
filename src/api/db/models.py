@@ -1,12 +1,14 @@
 
 """Defines the database classes."""
-from datetime import datetime
-from enum import unique
-import uuid
+# SQLAlchemy Imports
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
-from marshmallow import fields
 from sqlalchemy import event, text
 
+# Python imports
+from datetime import datetime
+import uuid
+
+# User module imports
 from app import FlaskApp
 
 # Initialize the App object
@@ -14,7 +16,7 @@ app = FlaskApp()
 
 
 class UserModel(app.db.Model):
-    """Database model for a User."""
+    """SQLAlchemy Database model for a User."""
 
     __tablename__ = 'users'
 
@@ -23,7 +25,7 @@ class UserModel(app.db.Model):
         primary_key=True
     )
 
-    # Authentication fields
+    # Identification fields: Username, Email, Password
     username = app.db.Column(
         app.db.String(100),
         unique=True,
@@ -37,11 +39,12 @@ class UserModel(app.db.Model):
     )
 
     _password = app.db.Column(
-        "password",
+        'password',
         app.db.String(128),
         nullable=False,
     )
 
+    # Personal details: name and address
     firstname = app.db.Column(
         app.db.String(100),
         nullable=False
@@ -56,6 +59,7 @@ class UserModel(app.db.Model):
         app.db.String(225)
     )
 
+    # Authorization fields
     is_admin = app.db.Column(
         app.db.Boolean,
         default=False
@@ -68,7 +72,8 @@ class UserModel(app.db.Model):
         default=uuid.uuid4
     )
 
-    created_on = app.db.Column(     # To easily allow for users to be deleted based on their date
+    # To easily allow for users to be deleted based on their date
+    created_on = app.db.Column(
         app.db.DateTime,
         index=False,
         unique=False,
@@ -76,33 +81,53 @@ class UserModel(app.db.Model):
         default=datetime.now
     )
 
+    # Relationships with other tables
     _orders_placed = app.db.relationship(
         "OrderModel", cascade="all, delete, delete-orphan", backref="user")
-    
+
     # Class methods
 
     @hybrid_property
     def password(self):
         return self._password
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return f"{self.firstname} {self.lastname} ({self.username})"
 
     @password.setter
     def password(self, password):
-        """Create hashed password."""
-        self._password = app.bcrypt.generate_password_hash(password)
+        """Set the user's password to a hashed password.
+
+        Args:
+            password: The password to be hashed
+
+        Returns:
+            None
+        """
+        self._password = app.bcrypt.generate_password_hash(
+            password).decode('utf8')
 
     @hybrid_method
     def check_password(self, password):
-        """Check hashed password."""
+        """Compare hashed password to see if its valid
+
+        Args:
+            password: The password to be checked
+
+        Returns:
+            A boolean value representing if the password entered is valid
+            or not
+        """
         return app.bcrypt.check_password_hash(self._password, password)
 
     @hybrid_property
     def orders_placed(self):
+        """Retrieve the amount of orders placed."""
         return len(self._orders_placed)
 
+
 class IngredientModel(app.db.Model):
+    """SQLAlchemy Database model for an Ingredient."""
     __tablename__ = 'ingredients'
 
     id = app.db.Column(
@@ -116,18 +141,21 @@ class IngredientModel(app.db.Model):
         nullable=False
     )
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return f"{self.name}"
 
 
-menuitems_ingredients = app.db.Table('menuitems_ingredients',
-                                     app.db.Model.metadata,
-                                     app.db.Column(
-                                         'menuitem_id', app.db.Integer, app.db.ForeignKey('menuitems.id')),
-                                     app.db.Column(
-                                         'ingredient_id', app.db.Integer, app.db.ForeignKey('ingredients.id')))
+# Helper table for the many to many relationship for menuitems and ingredients
+menuitems_ingredients = app.db.Table(
+    'menuitems_ingredients', app.db.Model.metadata,
+    app.db.Column(
+        'menuitem_id', app.db.Integer, app.db.ForeignKey('menuitems.id')),
+    app.db.Column(
+        'ingredient_id', app.db.Integer, app.db.ForeignKey('ingredients.id')))
+
 
 class MenuItemCategoryModel(app.db.Model):
+    """SQLAlchemy Database model for a MenuItemCategory."""
 
     __tablename__ = 'menuitem_categories'
 
@@ -142,12 +170,17 @@ class MenuItemCategoryModel(app.db.Model):
         nullable=False
     )
 
-    menuitems = app.db.relationship("MenuItemModel",cascade="all, delete", backref="category", lazy="joined")
-    
-    def __repr__(self) -> str:
+    # Relationships with other tables
+    menuitems = app.db.relationship(
+        "MenuItemModel",
+        cascade="all, delete", backref="category", lazy="joined")
+
+    def __repr__(self):
         return f"{self.category}"
 
+
 class MenuItemModel(app.db.Model):
+    """SQLAlchemy Database model for a MenuItem."""
 
     __tablename__ = 'menuitems'
 
@@ -180,13 +213,15 @@ class MenuItemModel(app.db.Model):
         app.db.String(225)
     )
 
+    # Relationships with other tables
     ingredients = app.db.relationship(
-        "IngredientModel", secondary=menuitems_ingredients, backref="related_menuitems")
+        "IngredientModel",
+        secondary=menuitems_ingredients, backref="related_menuitems")
 
     orderitems = app.db.relationship(
         "OrderItemModel", cascade="all, delete", backref="menuitem")
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return f"{self.flavour} {self.category}"
 
 
@@ -204,13 +239,14 @@ class OrderItemModel(app.db.Model):
         nullable=False
     )
 
+    # Relationships with other tables
     order_id = app.db.Column(
         app.db.Integer, app.db.ForeignKey("orders.id"), nullable=False)
 
     menuitem_id = app.db.Column(
         app.db.Integer, app.db.ForeignKey("menuitems.id"), nullable=False)
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return f"{self.menuitem} x{self.qty}"
 
 
@@ -228,13 +264,14 @@ class OrderModel(app.db.Model):
         default=False
     )
 
+    # Relationships with other tables
     items = app.db.relationship(
         "OrderItemModel", cascade="all, delete", backref="order")
 
     user_id = app.db.Column(
         app.db.Integer, app.db.ForeignKey('users.id'), nullable=False)
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return f"Order #{self.id}"
 
     # Ensure that empty orders are deleted
@@ -245,53 +282,3 @@ class OrderModel(app.db.Model):
             print("works")
             del_query = f"delete from orders where orders.id={target.order.id}"
             connection.execute(text(del_query))
-
-
-class IngredientSchema(app.ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = IngredientModel
-
-
-class MenuItemSchema(app.ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = MenuItemModel
-
-    ingredients = app.ma.Nested(IngredientSchema, default=[], many=True)
-    category = fields.String(attribute="category")
-
-class OrderItemSchema(app.ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = OrderItemModel
-        include_fk = True
-        exclude = ("menuitem_id", "order_id")
-
-    menuitem = app.ma.Nested(MenuItemSchema)
-
-
-class OrderSchema(app.ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = OrderModel
-        exclude=("user_id",)
-
-    class OrderUserSchema(app.ma.SQLAlchemyAutoSchema):
-        class Meta:
-            model = UserModel
-            exclude=("_password",)
-
-    items = app.ma.Nested(OrderItemSchema, default=[], many=True)
-    user = app.ma.Nested(OrderUserSchema)
-
-
-class UserSchema(app.ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = UserModel
-        exclude = ("_password",)
-
-    password = fields.String(attribute='_password')
-    orders_placed = fields.Integer(attribute='orders_placed')
-
-class MenuItemCategorySchema(app.ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = MenuItemCategoryModel
-
-    menuitems = app.ma.Nested(MenuItemSchema, many=True, default=[])
