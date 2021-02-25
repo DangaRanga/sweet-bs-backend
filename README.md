@@ -11,7 +11,7 @@ The API for all proceedings for Sweet B's online store
 3. Install the required packages  
    `pip install -r requirements.txt`
 4. Perform the Alembic Migrations  
-   `python src/manage.py db migrate`
+   `python src/manage.py db migrate`  
    `python src/manage.py db upgrade`
 5. Start the server  
    `python src/server.py`
