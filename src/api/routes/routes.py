@@ -60,7 +60,7 @@ class Routes():
 
     # Authentication routes
     @staticmethod
-    @app.route("/login", methods=['POST'])
+    @app.route("/auth/login", methods=['POST'])
     def login():
         """Route for handling user login
 
@@ -117,7 +117,7 @@ class Routes():
             )
 
     @staticmethod
-    @app.route("/signup", methods=['POST'])
+    @app.route("/auth/signup", methods=['POST'])
     def signup():
         """Route to retrieve details to signup a user up
 
@@ -132,7 +132,7 @@ class Routes():
         # Retrieve signup details from form
         req = request.get_json(force=True)
 
-        # TODO - Extract form data to create a user @Deniz
+        # TODO - Validate user data @Deniz
         username = req.get('username')
 
         # Check if the user already exists
@@ -140,7 +140,17 @@ class Routes():
 
         # Create and insert new user
         if user is None:
+            user = UserModel(
+                username=username,
+                first_name=req.get('firstname'),
+                last_name=req.get('lastname'),
+                password=req.get('password'),
+                email=req.get('email'),
+                address=req.get('address')
+            )
 
+            app.db.session.add(user)
+            app.db.session.commit()
             return make_response('Successfully registered.', 201)
         return make_response('User already exists. Please Log in', 401)
 

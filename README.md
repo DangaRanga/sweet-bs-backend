@@ -17,3 +17,7 @@ The API for all proceedings for Sweet B's online store
    `python src/server.py`
 
 And you're good to go!
+
+## Endpoints
+
+## Authentication Breakdown
