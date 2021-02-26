@@ -279,12 +279,6 @@ class OrderModel(app.db.Model):
     user_id = app.db.Column(
         app.db.Integer, app.db.ForeignKey('users.id'), nullable=False)
 
-    def get_summary(self):
-        order_obj = {
-            'id':self.id,
-            'address': UserModel.query.filter_by(user_id=user_id).ad
-        }
-
     def __repr__(self):
         return f"Order #{self.id}"
 
