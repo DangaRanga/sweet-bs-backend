@@ -5,7 +5,7 @@ from flask import jsonify, request, make_response
 from api.db.models import (
     IngredientModel,
     MenuItemCategoryModel,
-    MenuItemModel, 
+    MenuItemModel,
     OrderItemModel,
     OrderModel,
     UserModel,
