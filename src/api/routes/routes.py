@@ -89,12 +89,12 @@ class Routes():
         username = req.get('username')
         password = req.get('password')
 
-        # Check if the fields were sucessfully recieved, if not return a 401
+        # Check if the fields were successfully recieved, if not return a 401
         if username is None or password is None:
             return make_response(
                 'Could not verify user',
                 401,
-                {'WWWW-Authenticate': 'Basic realm ="Login details required"'})
+                {'WWW-Authenticate': 'Basic realm ="Login details required"'})
 
         user = UserModel.query.filter_by(username=username).first()
 

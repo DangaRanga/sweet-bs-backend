@@ -43,8 +43,6 @@ class OrderItemSchema(app.ma.SQLAlchemyAutoSchema):
 
     menuitem = app.ma.Nested(MenuItemSchema)
 
-
-
 class UserSchema(app.ma.SQLAlchemyAutoSchema):
     class Meta:
         model = UserModel
