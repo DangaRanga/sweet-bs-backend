@@ -1,5 +1,7 @@
 # Flask imports
-from flask import jsonify, request, make_response
+from functools import wraps
+from flask import jsonify, request, make_response, abort
+from flask.app import setupmethod
 
 # Database importsfrom marshmallow.fields import Integer
 from api.db.models import (
@@ -37,14 +39,11 @@ class Routes():
         response.headers.add("Access-Control-Allow-Headers", "*")
         return response
 
-    class token_required(method_decorator):
-        """Decorator to verify the JWT.
+    def token_required(f):
 
-        Inherits the method_decorator as a wrapper class to provide the
-        __name__ attribute
-        """
+        @wraps(f)
+        def token_decorator(*args, **kwargs):
 
-        def __call__(self, *args, **kwargs):
             token = None
 
             # Retrieve the JWT from the request header
@@ -53,19 +52,21 @@ class Routes():
 
             # Returns a 401 if there is no token
             if not token:
-                return jsonify({'message': 'The Token is missing'}), 401
+                abort(make_response('The Token is missing', 401))
 
             # Decode the token to retrieve the user requesting the data
             try:
-                data = jwt.decode(token, app.config.get('SECRET_KEY'))
+                data = jwt.decode(token, app.config.get(
+                    'SECRET_KEY'), algorithms="HS256")
                 current_user = UserModel.query.filter_by(
                     public_id=data.get('public_id')).first()
 
-            except InvalidSignatureError:
-                return jsonify({'message': 'Token is invalid'}), 401
+                return f(current_user)
 
-            return method_decorator.__call__(
-                self, current_user, *args, **kwargs)
+            except InvalidSignatureError:
+                abort(make_response('Token is invalid', 401))
+
+        return token_decorator
 
     # Authentication routes
     @staticmethod
@@ -114,10 +115,10 @@ class Routes():
                 'public_id': user.public_id,
                 'exp': datetime.utcnow() + timedelta(hours=expiry_time),
                 'admin': user.is_admin
-            }, app.config.get('SECRET_KEY'))
+            }, app.config.get('SECRET_KEY'), algorithm="HS256")
 
             return make_response(jsonify(
-                {'token': token.decode('utf-8')}), 202)
+                {'token': token}), 202)
         else:
             return make_response(
                 'Invalid password',
@@ -212,22 +213,32 @@ class Routes():
 
     @staticmethod
     @app.route("/orders/add", methods=['POST'])
-    def add_new_order():
+    @token_required
+    def add_new_order(customer):
+        """
+        Adds a new order to the database
+        """
         orderjson = request.json
         complete = orderjson["complete"]
-        user = orderjson["user_id"]
+        user = customer.id
+        items = orderjson["items"]
+        # create order
         order = OrderModel(complete=complete, user_id=user)
         app.db.session.add(order)
         app.db.session.flush()
+        # get the id of the order
         newid = order.id
-        for i in range(len(orderjson["items"])):
-            item = orderjson["items"][i]
-            item["order_id"]=newid
-            oitem = OrderItemModel(menuitem_id=item["menuitem_id"],order_id=item["order_id"],qty=item["qty"])
+        # register all the items on the order
+        for item in items:
+            oitem = OrderItemModel(
+                menuitem_id=item["menuitem"]["id"], 
+                order_id=newid, 
+                qty=item["qty"]
+            )
             app.db.session.add(oitem)
+        # complete add order
         app.db.session.commit()
-        return make_response("Order added succesfully",201)
-
+        return make_response("Order added succesfully", 201)
 
     @ staticmethod
     @ app.route("/menuitems", methods=['GET'])
@@ -255,8 +266,8 @@ class Routes():
             return jsonify(response)
 
     @ staticmethod
-    @ app.route("/ingredients", methods=['GET'])
     @ token_required
+    @ app.route("/ingredients", methods=['GET'])
     def get_all_ingredients(current_user):
         """Queries the Ingredients table for all ingredients
 
