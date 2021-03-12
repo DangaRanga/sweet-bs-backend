@@ -39,11 +39,14 @@ class Routes():
         response.headers.add("Access-Control-Allow-Headers", "*")
         return response
 
-    def token_required(f):
+    class token_required(method_decorator):
+        """Decorator to verify the JWT.
 
-        @wraps(f)
-        def token_decorator(*args, **kwargs):
+        Inherits the method_decorator as a wrapper class to provide the
+        __name__ attribute
+        """
 
+        def __call__(self, *args, **kwargs):
             token = None
 
             # Retrieve the JWT from the request header
@@ -52,7 +55,7 @@ class Routes():
 
             # Returns a 401 if there is no token
             if not token:
-                abort(make_response('The Token is missing', 401))
+                return jsonify({'message': 'The Token is missing'}), 401
 
             # Decode the token to retrieve the user requesting the data
             try:
@@ -61,12 +64,12 @@ class Routes():
                 current_user = UserModel.query.filter_by(
                     public_id=data.get('public_id')).first()
 
-                return f(current_user)
-
             except InvalidSignatureError:
-                abort(make_response('Token is invalid', 401))
+                return jsonify({'message': 'Token is invalid'}), 401
 
-        return token_decorator
+            return method_decorator.__call__(
+                self, current_user, *args, **kwargs)
+                
 
     # Authentication routes
     @staticmethod
@@ -266,8 +269,8 @@ class Routes():
             return jsonify(response)
 
     @ staticmethod
-    @ token_required
     @ app.route("/ingredients", methods=['GET'])
+    @ token_required
     def get_all_ingredients(current_user):
         """Queries the Ingredients table for all ingredients
 
