@@ -204,7 +204,7 @@ class Routes():
         Returns:
             A json object containing all orders
         """
-        
+
         orders = OrderModel.query.all()
         order_schema = OrderSchema(many=True)
         if orders is None:
@@ -263,6 +263,7 @@ class Routes():
         Returns:
             A json object containing all menuitems
         """
+        
         menuitems = MenuItemModel.query.join(
             MenuItemCategoryModel,
             MenuItemModel.category_id == MenuItemCategoryModel.id)
@@ -289,6 +290,7 @@ class Routes():
         Returns:
             A json object containing all ingredients
         """
+
         ingredients = IngredientModel.query.all()
         ingredient_schema = IngredientSchema(many=True)
         if ingredients is None:
