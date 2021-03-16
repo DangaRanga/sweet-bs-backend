@@ -1,7 +1,8 @@
 # Flask imports
 from functools import wraps
 from flask import jsonify, request, make_response, abort
-from flask.app import setupmethod
+from werkzeug.exceptions import HTTPException
+
 
 # Database importsfrom marshmallow.fields import Integer
 from api.db.models import (
@@ -55,7 +56,7 @@ class Routes():
 
             # Returns a 401 if there is no token
             if not token:
-                return jsonify({'message': 'The Token is missing'}), 401
+                abort(make_response({"message": 'The Token is missing'}, 401))
 
             # Decode the token to retrieve the user requesting the data
             try:
@@ -65,13 +66,13 @@ class Routes():
                     public_id=data.get('public_id')).first()
 
             except InvalidSignatureError:
-                return jsonify({'message': 'Token is invalid'}), 401
+                abort(make_response({"message": 'Token is invalid'}, 401))
 
             return method_decorator.__call__(
                 self, current_user, *args, **kwargs)
-                
 
     # Authentication routes
+
     @staticmethod
     @app.route("/auth/login", methods=['POST'])
     def login():
@@ -104,10 +105,10 @@ class Routes():
 
         # Return a 401 if no user is found
         if user is None:
-            return make_response(
-                'Could not verify user',
+            return abort(make_response(
+                {"message": 'Could not verify user'},
                 401,
-                {'WWW-Authenticate': 'Basic realm ="User does not exist"'})
+                {'WWW-Authenticate': 'Basic realm ="User does not exist"'}))
 
         # Verify user password
         if user.check_password(password) is True:
@@ -124,7 +125,7 @@ class Routes():
                 {'token': token}), 202)
         else:
             return make_response(
-                'Invalid password',
+                {"message": 'Invalid password'},
                 401,
                 {'WWW-Authenticate': 'Basic realm="Wrong password"'}
             )
@@ -203,6 +204,7 @@ class Routes():
         Returns:
             A json object containing all orders
         """
+        
         orders = OrderModel.query.all()
         order_schema = OrderSchema(many=True)
         if orders is None:
@@ -217,10 +219,17 @@ class Routes():
     @staticmethod
     @app.route("/orders/add", methods=['POST'])
     @token_required
-    def add_new_order(customer):
+    def add_new_order(customer:UserModel):
         """
         Adds a new order to the database
+
+        Args:
+            customer (UserModel): the customer who made the order
+        
+        Returns:
+            Response
         """
+
         orderjson = request.json
         complete = orderjson["complete"]
         user = customer.id
@@ -234,8 +243,8 @@ class Routes():
         # register all the items on the order
         for item in items:
             oitem = OrderItemModel(
-                menuitem_id=item["menuitem"]["id"], 
-                order_id=newid, 
+                menuitem_id=item["menuitem"]["id"],
+                order_id=newid,
                 qty=item["qty"]
             )
             app.db.session.add(oitem)
@@ -292,25 +301,17 @@ class Routes():
             return jsonify(response)
 
     @staticmethod
-    @app.route("/menuitems/category", methods=['GET'])
-    def get_menuitems_by_category():
-        menuitems = MenuItemCategoryModel.query.all()
-        category_schema = MenuItemCategorySchema(many=True)
-        if menuitems is None:
-            response = {
-                "message": "no menuitems found",
-            }
-            return jsonify(response)
-        else:
-            response = category_schema.dump(menuitems)
-            return jsonify(response)
+    @app.errorhandler(HTTPException)
+    def http_errors_to_json(error: HTTPException):
+        """
+        General error handler to ensure that the server always returns JSON
+        """
 
-    @staticmethod
-    @app.errorhandler(404)
-    def page_not_found(error):
         response = {
-            "message": str(error),
+            "message": str(error.description),
         }
         response = jsonify(response)
-        response.status_code = 404
+        response.status_code = error.code
         return response
+
+    
