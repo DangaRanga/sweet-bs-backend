@@ -170,8 +170,7 @@ class Routes():
 
     @ staticmethod
     @ app.route("/users", methods=['GET'])
-    @ token_required
-    def get_all_users(current_user):
+    def get_all_users():
         """Queries the User table for all users
 
         Args:
@@ -180,7 +179,7 @@ class Routes():
         Returns:
             A json object containing all users
         """
-        print(current_user.username)
+        #print(current_user.username)
         users = UserModel.query.all()
         user_schema = UserSchema(many=True)
         if users is None:
@@ -191,6 +190,20 @@ class Routes():
         else:
             response = user_schema.dump(users)
             return (jsonify(response))
+
+    @staticmethod
+    @app.route("/users/remove", methods=['POST'])
+    def remove_user():
+        req = request.get_json(force=True)
+        try:
+            uid = int(req.get('id'))
+            user = UserModel.query.get(uid)
+            app.db.session.delete(user)
+            app.db.session.commit()
+            res = 'User %s successfully deleted.' % (user.firstname)
+        except:
+            res = 'User could not be deleted'
+        return (jsonify({'res': res}))
 
     @ staticmethod
     @ app.route("/orders", methods=['GET'])
@@ -280,8 +293,7 @@ class Routes():
 
     @ staticmethod
     @ app.route("/ingredients", methods=['GET'])
-    @ token_required
-    def get_all_ingredients(current_user):
+    def get_all_ingredients():
         """Queries the Ingredients table for all ingredients
 
         Args:
@@ -301,6 +313,28 @@ class Routes():
         else:
             response = ingredient_schema.dump(ingredients)
             return jsonify(response)
+
+    @staticmethod
+    @app.route('/ingredients/setstock', methods=['POST'])
+    def set_stock():
+        req = request.get_json(force=True)
+        try:
+            stock = req.get('stock')
+            uid = int(req.get('id'))
+            if stock == 'yes':
+                app.db.session.execute('UPDATE ingredients SET in_stock = true WHERE id = :val', {'val': uid})
+                app.db.session.commit()
+                res = 'Stock updated.'
+            elif stock == 'no':
+                app.db.session.execute('UPDATE ingredients SET in_stock = false WHERE id = :val', {'val': uid})
+                app.db.session.commit()
+                res = 'Stock updated.'
+            else:
+                res = 'A problem occured'
+        except:
+            res = 'Database could not be updated'
+        
+        return (jsonify({'res': res}))
 
     @staticmethod
     @app.errorhandler(HTTPException)
