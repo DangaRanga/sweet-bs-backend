@@ -26,32 +26,22 @@ class MenuItemSchema(app.ma.SQLAlchemyAutoSchema):
     class Meta:
         model = MenuItemModel
 
-    ingredients = app.ma.Nested(IngredientSchema, default=[], many=True)
-    category = fields.String(attribute="category")
+    class CategorySchema(app.ma.SQLAlchemyAutoSchema):
+        class Meta:
+            model = MenuItemCategoryModel
 
+    ingredients = app.ma.Nested(IngredientSchema, default=[], many=True)
+    category = app.ma.Nested(CategorySchema)
 
 class OrderItemSchema(app.ma.SQLAlchemyAutoSchema):
+    
+    
     class Meta:
         model = OrderItemModel
         include_fk = True
-        exclude = ("menuitem_id", "order_id")
+        #exclude = ("menuitem_id", "order_id")
 
     menuitem = app.ma.Nested(MenuItemSchema)
-
-
-class OrderSchema(app.ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = OrderModel
-        exclude = ("user_id",)
-
-    class OrderUserSchema(app.ma.SQLAlchemyAutoSchema):
-        class Meta:
-            model = UserModel
-            exclude = ("_password",)
-
-    items = app.ma.Nested(OrderItemSchema, default=[], many=True)
-    user = app.ma.Nested(OrderUserSchema)
-
 
 class UserSchema(app.ma.SQLAlchemyAutoSchema):
     class Meta:
@@ -61,6 +51,14 @@ class UserSchema(app.ma.SQLAlchemyAutoSchema):
     password = fields.String(attribute='_password')
     orders_placed = fields.Integer(attribute='orders_placed')
 
+
+class OrderSchema(app.ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = OrderModel
+        exclude=("user_id",)
+
+    items = app.ma.Nested(OrderItemSchema, default=[], many=True)
+    user = app.ma.Nested(UserSchema)
 
 class MenuItemCategorySchema(app.ma.SQLAlchemyAutoSchema):
     class Meta:

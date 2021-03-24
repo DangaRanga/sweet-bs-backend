@@ -1,11 +1,15 @@
 # Flask imports
-from flask import jsonify, request, make_response
+from functools import wraps
+from flask import jsonify, request, make_response, abort
+from werkzeug.exceptions import HTTPException
+
 
 # Database importsfrom marshmallow.fields import Integer
 from api.db.models import (
     IngredientModel,
     MenuItemCategoryModel,
     MenuItemModel,
+    OrderItemModel,
     OrderModel,
     UserModel,
     app)
@@ -27,6 +31,14 @@ from method_decorator import method_decorator
 
 
 class Routes():
+    @staticmethod
+    @app.after_request
+    def add_response_headers(response=None):
+        if not response:
+            response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add("Access-Control-Allow-Headers", "*")
+        return response
 
     class token_required(method_decorator):
         """Decorator to verify the JWT.
@@ -44,21 +56,23 @@ class Routes():
 
             # Returns a 401 if there is no token
             if not token:
-                return jsonify({'message': 'The Token is missing'}), 401
+                abort(make_response({"message": 'The Token is missing'}, 401))
 
             # Decode the token to retrieve the user requesting the data
             try:
-                data = jwt.decode(token, app.config.get('SECRET_KEY'))
+                data = jwt.decode(token, app.config.get(
+                    'SECRET_KEY'), algorithms="HS256")
                 current_user = UserModel.query.filter_by(
                     public_id=data.get('public_id')).first()
 
             except InvalidSignatureError:
-                return jsonify({'message': 'Token is invalid'}), 401
+                abort(make_response({"message": 'Token is invalid'}, 401))
 
             return method_decorator.__call__(
                 self, current_user, *args, **kwargs)
 
     # Authentication routes
+
     @staticmethod
     @app.route("/auth/login", methods=['POST'])
     def login():
@@ -80,21 +94,21 @@ class Routes():
         username = req.get('username')
         password = req.get('password')
 
-        # Check if the fields were sucessfully recieved, if not return a 401
+        # Check if the fields were successfully recieved, if not return a 401
         if username is None or password is None:
             return make_response(
                 'Could not verify user',
                 401,
-                {'WWWW-Authenticate': 'Basic realm ="Login details required"'})
+                {'WWW-Authenticate': 'Basic realm ="Login details required"'})
 
         user = UserModel.query.filter_by(username=username).first()
 
         # Return a 401 if no user is found
         if user is None:
-            return make_response(
-                'Could not verify user',
+            return abort(make_response(
+                {"message": 'Could not verify user'},
                 401,
-                {'WWW-Authenticate': 'Basic realm ="User does not exist"'})
+                {'WWW-Authenticate': 'Basic realm ="User does not exist"'}))
 
         # Verify user password
         if user.check_password(password) is True:
@@ -105,13 +119,13 @@ class Routes():
                 'public_id': user.public_id,
                 'exp': datetime.utcnow() + timedelta(hours=expiry_time),
                 'admin': user.is_admin
-            }, app.config.get('SECRET_KEY'))
+            }, app.config.get('SECRET_KEY'), algorithm="HS256")
 
             return make_response(jsonify(
                 {'token': token}), 202)
         else:
             return make_response(
-                'Invalid password',
+                {"message": 'Invalid password'},
                 401,
                 {'WWW-Authenticate': 'Basic realm="Wrong password"'}
             )
@@ -156,8 +170,7 @@ class Routes():
 
     @ staticmethod
     @ app.route("/users", methods=['GET'])
-    @ token_required
-    def get_all_users(current_user):
+    def get_all_users():
         """Queries the User table for all users
 
         Args:
@@ -166,7 +179,7 @@ class Routes():
         Returns:
             A json object containing all users
         """
-        print(current_user.username)
+        #print(current_user.username)
         users = UserModel.query.all()
         user_schema = UserSchema(many=True)
         if users is None:
@@ -176,7 +189,21 @@ class Routes():
             return jsonify(response)
         else:
             response = user_schema.dump(users)
-            return jsonify(response)
+            return (jsonify(response))
+
+    @staticmethod
+    @app.route("/users/remove", methods=['POST'])
+    def remove_user():
+        req = request.get_json(force=True)
+        try:
+            uid = int(req.get('id'))
+            user = UserModel.query.get(uid)
+            app.db.session.delete(user)
+            app.db.session.commit()
+            res = 'User %s successfully deleted.' % (user.firstname)
+        except:
+            res = 'User could not be deleted'
+        return (jsonify({'res': res}))
 
     @ staticmethod
     @ app.route("/orders", methods=['GET'])
@@ -190,6 +217,7 @@ class Routes():
         Returns:
             A json object containing all orders
         """
+
         orders = OrderModel.query.all()
         order_schema = OrderSchema(many=True)
         if orders is None:
@@ -200,6 +228,42 @@ class Routes():
         else:
             response = order_schema.dump(orders)
             return jsonify(response)
+
+    @staticmethod
+    @app.route("/orders/add", methods=['POST'])
+    @token_required
+    def add_new_order(customer:UserModel):
+        """
+        Adds a new order to the database
+
+        Args:
+            customer (UserModel): the customer who made the order
+        
+        Returns:
+            Response
+        """
+
+        orderjson = request.json
+        complete = orderjson["complete"]
+        user = customer.id
+        items = orderjson["items"]
+        # create order
+        order = OrderModel(complete=complete, user_id=user)
+        app.db.session.add(order)
+        app.db.session.flush()
+        # get the id of the order
+        newid = order.id
+        # register all the items on the order
+        for item in items:
+            oitem = OrderItemModel(
+                menuitem_id=item["menuitem"]["id"],
+                order_id=newid,
+                qty=item["qty"]
+            )
+            app.db.session.add(oitem)
+        # complete add order
+        app.db.session.commit()
+        return make_response("Order added succesfully", 201)
 
     @ staticmethod
     @ app.route("/menuitems", methods=['GET'])
@@ -212,6 +276,7 @@ class Routes():
         Returns:
             A json object containing all menuitems
         """
+        
         menuitems = MenuItemModel.query.join(
             MenuItemCategoryModel,
             MenuItemModel.category_id == MenuItemCategoryModel.id)
@@ -228,8 +293,7 @@ class Routes():
 
     @ staticmethod
     @ app.route("/ingredients", methods=['GET'])
-    @ token_required
-    def get_all_ingredients(current_user):
+    def get_all_ingredients():
         """Queries the Ingredients table for all ingredients
 
         Args:
@@ -238,6 +302,7 @@ class Routes():
         Returns:
             A json object containing all ingredients
         """
+
         ingredients = IngredientModel.query.all()
         ingredient_schema = IngredientSchema(many=True)
         if ingredients is None:
@@ -250,15 +315,39 @@ class Routes():
             return jsonify(response)
 
     @staticmethod
-    @app.route("/menuitems/category", methods=['GET'])
-    def get_menuitems_by_category():
-        menuitems = MenuItemCategoryModel.query.all()
-        category_schema = MenuItemCategorySchema(many=True)
-        if menuitems is None:
-            response = {
-                "message": "no menuitems found",
-            }
-            return jsonify(response)
-        else:
-            response = category_schema.dump(menuitems)
-            return jsonify(response)
+    @app.route('/ingredients/setstock', methods=['POST'])
+    def set_stock():
+        req = request.get_json(force=True)
+        try:
+            stock = req.get('stock')
+            uid = int(req.get('id'))
+            if stock == 'yes':
+                app.db.session.execute('UPDATE ingredients SET in_stock = true WHERE id = :val', {'val': uid})
+                app.db.session.commit()
+                res = 'Stock updated.'
+            elif stock == 'no':
+                app.db.session.execute('UPDATE ingredients SET in_stock = false WHERE id = :val', {'val': uid})
+                app.db.session.commit()
+                res = 'Stock updated.'
+            else:
+                res = 'A problem occured'
+        except:
+            res = 'Database could not be updated'
+        
+        return (jsonify({'res': res}))
+
+    @staticmethod
+    @app.errorhandler(HTTPException)
+    def http_errors_to_json(error: HTTPException):
+        """
+        General error handler to ensure that the server always returns JSON
+        """
+
+        response = {
+            "message": str(error.description),
+        }
+        response = jsonify(response)
+        response.status_code = error.code
+        return response
+
+    

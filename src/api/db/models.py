@@ -82,17 +82,16 @@ class UserModel(app.db.Model):
     )
 
     # Relationships with other tables
-    _orders_placed = app.db.relationship(
-        "OrderModel", cascade="all, delete, delete-orphan", backref="user")
+    # _orders_placed = app.db.relationship(
+    #     "OrderModel", cascade="all, delete, delete-orphan", backref="user")
 
     # Class methods
+    def __repr__(self):
+        return f"{self.firstname} {self.lastname} ({self.username})"
 
     @hybrid_property
     def password(self):
         return self._password
-
-    def __repr__(self):
-        return f"{self.firstname} {self.lastname} ({self.username})"
 
     @password.setter
     def password(self, password):
@@ -141,6 +140,11 @@ class IngredientModel(app.db.Model):
         nullable=False
     )
 
+    in_stock = app.db.Column(
+        app.db.Boolean,
+        default=False
+    )
+
     def __repr__(self):
         return f"{self.name}"
 
@@ -164,25 +168,26 @@ class MenuItemCategoryModel(app.db.Model):
         primary_key=True
     )
 
-    category = app.db.Column(
+    name = app.db.Column(
         app.db.String(40),
         unique=True,
         nullable=False
     )
 
-    # Relationships with other tables
-    menuitems = app.db.relationship(
-        "MenuItemModel",
-        cascade="all, delete", backref="category", lazy="joined")
-
-    def __repr__(self):
-        return f"{self.category}"
+    menuitems = app.db.relationship("MenuItemModel",cascade="all, delete", backref="category")
+    
+    def __repr__(self) -> str:
+        return f"{self.name}"
 
 
 class MenuItemModel(app.db.Model):
     """SQLAlchemy Database model for a MenuItem."""
 
     __tablename__ = 'menuitems'
+
+    __table_args__ = (
+        app.db.UniqueConstraint('flavour','category_id'),
+    )
 
     id = app.db.Column(
         app.db.Integer,
@@ -287,6 +292,5 @@ class OrderModel(app.db.Model):
     @event.listens_for(OrderItemModel, 'after_delete')
     def delete_empty_order(mapper, connection, target):
         if not target.order.items:
-            print("works")
             del_query = f"delete from orders where orders.id={target.order.id}"
             connection.execute(text(del_query))
