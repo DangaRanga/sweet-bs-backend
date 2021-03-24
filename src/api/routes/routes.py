@@ -108,7 +108,7 @@ class Routes():
             }, app.config.get('SECRET_KEY'))
 
             return make_response(jsonify(
-                {'token': token.decode('utf-8')}), 202)
+                {'token': token}), 202)
         else:
             return make_response(
                 'Invalid password',
