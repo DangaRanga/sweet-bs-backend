@@ -82,8 +82,8 @@ class UserModel(app.db.Model):
     )
 
     # Relationships with other tables
-    _orders_placed = app.db.relationship(
-        "OrderModel", cascade="all, delete, delete-orphan", backref="user")
+    # _orders_placed = app.db.relationship(
+    #     "OrderModel", cascade="all, delete, delete-orphan", backref="user")
 
     # Class methods
     def __repr__(self):
@@ -138,6 +138,11 @@ class IngredientModel(app.db.Model):
         app.db.String(50),
         unique=True,
         nullable=False
+    )
+
+    in_stock = app.db.Column(
+        app.db.Boolean,
+        default=False
     )
 
     def __repr__(self):

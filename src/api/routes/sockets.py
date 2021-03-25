@@ -2,10 +2,15 @@ import sys
 from typing import Set
 from api.db.models import MenuItemCategoryModel
 from api.db.schemas import MenuItemCategorySchema
+from api.db.models import IngredientModel
+from api.db.schemas import IngredientSchema
+from api.db.models import UserModel
+from api.db.schemas import UserSchema
 from api.routes.routes import Routes, app
 from signal import *
 from eventlet import spawn
 import atexit
+import pgpubsub
 
 
 class ServerSockets():
@@ -64,7 +69,7 @@ class ServerSockets():
                 trigger_name = f"{table}_notify_{action.lower()}"
 
                 triggers += f"""
-                DROP TRIGGER IF EXISTS {trigger_name} ON menuitems;
+                DROP TRIGGER IF EXISTS {trigger_name} ON {table};
                 CREATE TRIGGER {trigger_name}
                 AFTER {action} ON {table}
                 FOR EACH ROW EXECUTE PROCEDURE {func_name};
@@ -116,11 +121,12 @@ class ServerSockets():
             NoReturn
         """
 
+        pubsub=pgpubsub.connect(**app.pubsub_conn_det)
         channel = ServerSockets._set_up_change_notifier(
-            app.pubsub.conn, "menuitems", set(ServerSockets.DbActions))
-        app.pubsub.listen(channel)
+            pubsub.conn, "menuitems", set(ServerSockets.DbActions))
+        pubsub.listen(channel)
         while True:
-            for event in app.pubsub.events(yield_timeouts=True):
+            for event in pubsub.events(yield_timeouts=True):
                 if event is None:
                     pass
                 else:
@@ -144,6 +150,74 @@ class ServerSockets():
         ServerSockets.get_menuitems_by_category()
 
     @staticmethod
+    def get_users():
+        users = UserModel.query.all()
+        user_schema = UserSchema(many=True)
+        if users is None:
+            app.socketio.emit('error', {
+                              "message": "Failed to get user list", "code": 404}, namespace='/users/watch')
+        else:
+            response = user_schema.dump(users)
+            app.socketio.emit('changed:users', response,
+                              namespace='/users/watch')
+
+    @staticmethod
+    def listen_for_users():
+        pubsub=pgpubsub.connect(**app.pubsub_conn_det)
+        channel = ServerSockets._set_up_change_notifier(
+            pubsub.conn, "users", set(ServerSockets.DbActions))
+        pubsub.listen(channel)
+        while True:
+            for event in pubsub.events(yield_timeouts=True):
+                if event is None:
+                    pass
+                else:
+                    with app.app_context():
+                        ServerSockets.get_users()
+
+    @staticmethod
+    @app.socketio.on('connect', namespace='/users/watch')
+    def on_user_connect():
+        ServerSockets.get_users()
+
+    @staticmethod
+    def get_ingredients():
+        ingredients = IngredientModel.query.all()
+        ingredient_schema = IngredientSchema(many=True)
+
+        if ingredients is None:
+            app.socketio.emit(
+                'error', {"message": "Failed to get list of ingredients", "code": 404}, namespace='/ingredients/watch'
+            )
+        else:
+            response = ingredient_schema.dump(ingredients)
+            app.socketio.emit(
+                'changed:ingredients', response, namespace='/ingredients/watch'
+            )
+
+    @staticmethod
+    def listen_for_ingredients():
+        pubsub=pgpubsub.connect(**app.pubsub_conn_det)
+
+        channel = ServerSockets._set_up_change_notifier(
+            pubsub.conn, "ingredients", set(
+                ServerSockets.DbActions)
+        )
+        pubsub.listen(channel)
+        while True:
+            for event in pubsub.events(yield_timeouts=True):
+                if event is None:
+                    pass
+                else:
+                    with app.app_context():
+                        ServerSockets.get_ingredients()
+
+    @staticmethod
+    @app.socketio.on('connect', namespace='/ingredients/watch')
+    def on_shoppinglist_connect():
+        ServerSockets.get_ingredients()
+
+    @staticmethod
     @atexit.register
     def clean_up_threads(*args):
         """
@@ -158,7 +232,8 @@ class ServerSockets():
         """
 
         for thread in app.socket_threads:
-            thread.kill()
+            if thread:
+                thread.kill()
         # after killing the threads, remove them from the list
         app.socket_threads.clear()
         sys.exit()
@@ -180,6 +255,8 @@ class ServerSockets():
         # register clean_up_threads to run on crash signals
         for sig in (SIGABRT, SIGINT, SIGTERM):
             signal(sig, ServerSockets.clean_up_threads)
-        
+
         # spawn all listen threads
+        app.socket_threads.append(spawn(ServerSockets.listen_for_users))
+        app.socket_threads.append(spawn(ServerSockets.listen_for_ingredients))
         app.socket_threads.append(spawn(ServerSockets.listen_for_menu))
