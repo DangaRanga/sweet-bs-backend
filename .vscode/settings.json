@@ -1,3 +1,4 @@
 {
-    "python.envFile": ".env"
+    "python.envFile": ".env",
+    "python.pythonPath": "venv/bin/python"
 }

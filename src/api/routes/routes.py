@@ -25,7 +25,7 @@ from api.db.schemas import (
 
 # JWT Authentication Imports
 import jwt
-from jwt.exceptions import InvalidSignatureError
+from jwt.exceptions import ExpiredSignatureError, InvalidSignatureError
 from datetime import datetime, timedelta
 from method_decorator import method_decorator
 
@@ -67,6 +67,10 @@ class Routes():
 
             except InvalidSignatureError:
                 abort(make_response({"message": 'Token is invalid'}, 401))
+            
+            except ExpiredSignatureError:
+                abort(make_response({"message": 'Token is expired'}, 401))
+
 
             return method_decorator.__call__(
                 self, current_user, *args, **kwargs)
@@ -276,7 +280,7 @@ class Routes():
         Returns:
             A json object containing all menuitems
         """
-        
+
         menuitems = MenuItemModel.query.join(
             MenuItemCategoryModel,
             MenuItemModel.category_id == MenuItemCategoryModel.id)
