@@ -67,10 +67,9 @@ class Routes():
 
             except InvalidSignatureError:
                 abort(make_response({"message": 'Token is invalid'}, 401))
-            
+
             except ExpiredSignatureError:
                 abort(make_response({"message": 'Token is expired'}, 401))
-
 
             return method_decorator.__call__(
                 self, current_user, *args, **kwargs)
@@ -183,7 +182,7 @@ class Routes():
         Returns:
             A json object containing all users
         """
-        #print(current_user.username)
+        # print(current_user.username)
         users = UserModel.query.all()
         user_schema = UserSchema(many=True)
         if users is None:
@@ -211,8 +210,7 @@ class Routes():
 
     @ staticmethod
     @ app.route("/orders", methods=['GET'])
-    @ token_required
-    def get_all_orders(current_user):
+    def get_all_orders():
         """Queries the Orders table for all orders.
 
         Args:
@@ -236,13 +234,13 @@ class Routes():
     @staticmethod
     @app.route("/orders/add", methods=['POST'])
     @token_required
-    def add_new_order(customer:UserModel):
+    def add_new_order(customer: UserModel):
         """
         Adds a new order to the database
 
         Args:
             customer (UserModel): the customer who made the order
-        
+
         Returns:
             Response
         """
@@ -326,18 +324,20 @@ class Routes():
             stock = req.get('stock')
             uid = int(req.get('id'))
             if stock == 'yes':
-                app.db.session.execute('UPDATE ingredients SET in_stock = true WHERE id = :val', {'val': uid})
+                app.db.session.execute(
+                    'UPDATE ingredients SET in_stock = true WHERE id = :val', {'val': uid})
                 app.db.session.commit()
                 res = 'Stock updated.'
             elif stock == 'no':
-                app.db.session.execute('UPDATE ingredients SET in_stock = false WHERE id = :val', {'val': uid})
+                app.db.session.execute(
+                    'UPDATE ingredients SET in_stock = false WHERE id = :val', {'val': uid})
                 app.db.session.commit()
                 res = 'Stock updated.'
             else:
                 res = 'A problem occured'
         except:
             res = 'Database could not be updated'
-        
+
         return (jsonify({'res': res}))
 
     @staticmethod
@@ -353,5 +353,3 @@ class Routes():
         response = jsonify(response)
         response.status_code = error.code
         return response
-
-    

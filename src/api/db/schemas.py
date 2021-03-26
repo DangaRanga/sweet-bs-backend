@@ -33,15 +33,16 @@ class MenuItemSchema(app.ma.SQLAlchemyAutoSchema):
     ingredients = app.ma.Nested(IngredientSchema, default=[], many=True)
     category = app.ma.Nested(CategorySchema)
 
+
 class OrderItemSchema(app.ma.SQLAlchemyAutoSchema):
-    
-    
+
     class Meta:
         model = OrderItemModel
         include_fk = True
         #exclude = ("menuitem_id", "order_id")
 
-    menuitem = app.ma.Nested(MenuItemSchema)
+    menuitem = app.ma.Nested(MenuItemSchema, default={'price': 0})
+
 
 class UserSchema(app.ma.SQLAlchemyAutoSchema):
     class Meta:
@@ -55,10 +56,15 @@ class UserSchema(app.ma.SQLAlchemyAutoSchema):
 class OrderSchema(app.ma.SQLAlchemyAutoSchema):
     class Meta:
         model = OrderModel
-        exclude=("user_id",)
+        exclude = ("user_id",)
 
     items = app.ma.Nested(OrderItemSchema, default=[], many=True)
-    user = app.ma.Nested(UserSchema)
+    user = app.ma.Nested(UserSchema, default={
+        'address': '',
+        'firstname': '',
+        'lastname': ''
+    })
+
 
 class MenuItemCategorySchema(app.ma.SQLAlchemyAutoSchema):
     class Meta:

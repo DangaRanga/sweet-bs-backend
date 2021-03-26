@@ -14,5 +14,4 @@ if __name__ == '__main__':
         views = Views(app)
     app.db_create_all()
     ServerSockets.start_sockets_threads()
-    app.socketio.run(app,"0.0.0.0",9090,debug=True)
-    
+    app.socketio.run(app, "0.0.0.0", 9090, debug=True)
