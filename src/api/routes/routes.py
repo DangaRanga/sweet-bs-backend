@@ -1,6 +1,6 @@
 # Flask imports
 from functools import wraps
-from flask import jsonify, request, make_response, abort
+from flask import json, jsonify, request, make_response, abort
 from werkzeug.exceptions import HTTPException
 
 
@@ -28,6 +28,8 @@ import jwt
 from jwt.exceptions import ExpiredSignatureError, InvalidSignatureError
 from datetime import datetime, timedelta
 from method_decorator import method_decorator
+from sqlalchemy import text
+import time
 
 
 class Routes():
@@ -182,7 +184,6 @@ class Routes():
         Returns:
             A json object containing all users
         """
-        # print(current_user.username)
         users = UserModel.query.all()
         user_schema = UserSchema(many=True)
         if users is None:
@@ -203,10 +204,10 @@ class Routes():
             user = UserModel.query.get(uid)
             app.db.session.delete(user)
             app.db.session.commit()
-            res = 'User %s successfully deleted.' % (user.firstname)
+            res = 'success'
         except:
             res = 'User could not be deleted'
-        return (jsonify({'res': res}))
+        return (jsonify({"message": res}))
 
     @ staticmethod
     @ app.route("/orders", methods=['GET'])
@@ -292,6 +293,104 @@ class Routes():
         else:
             response = menuitem_schema.dump(menuitems)
             return jsonify(response)
+    
+    @staticmethod
+    @app.route("/categories")
+    def get_categories():
+        categories = MenuItemCategoryModel.query.all()
+        menuitem_category_schema = MenuItemCategorySchema(many=True)
+
+        if categories is None:
+            response = {
+                "message": "no categories found",
+            }
+        else:
+            response = menuitem_category_schema.dump(categories)
+        return jsonify(response)
+
+    @staticmethod
+    @app.route("/categories/add", methods=['POST'])
+    def add_category():
+        req = request.get_json(force=True)
+        try:
+            category = req.get('category')
+            app.db.session.execute(text("INSERT INTO menuitem_categories (name) values(:category)"), {"category": category})
+            app.db.session.commit()
+            res = 'Category successfully added.'
+        except:
+            res = 'Category could not be added'
+        return (jsonify({'res': res}))
+
+    @staticmethod
+    @app.route("/orders/<uid>")
+    def get_user_orders(uid):
+        user_id = int(uid)
+        order_schema = OrderSchema(many=True)
+        orders = OrderModel.query.filter_by(user_id = user_id)
+
+        if orders is not None:
+            res = order_schema.dump(orders)
+            return jsonify(res)
+        else:
+            res = {"message" : "No orders found for user."}
+            return jsonify(res)
+
+    @staticmethod
+    @app.route("/menuitems/add", methods=['POST'])
+    def add_menuitem():
+        req = request.get_json(force=True)
+        try:
+            flavour = req.get('flavour')
+            price = float(req.get('price'))
+            category_id = int(req.get('categoryID'))
+            description = req.get('description')
+            img_url = req.get('imgURL')
+            ids = req.get('ids')
+            app.db.session.execute(text("INSERT INTO menuitems (flavour,category_id,price,description,image_url) values(:flavour, :categoryID, :price, :description, :imgURL)"), {"flavour": flavour, "categoryID": category_id, "price": price, "description":description, "imgURL": img_url})
+            app.db.session.commit()
+            res = app.db.session.query(MenuItemModel).order_by(MenuItemModel.id.desc()).first().id
+            for id in ids:
+                app.db.session.execute(text("INSERT into menuitems_ingredients (menuitem_id,ingredient_id) values(:menu_id, :ing_id)"), {"menu_id": res, "ing_id": id})
+                app.db.session.commit()
+            return (jsonify({'message': 'success'}))
+        except:
+            return (jsonify({'message': 'Menuitem could not be added'}))
+
+    @staticmethod
+    @app.route("/update-menuitem", methods=['POST'])
+    def update_menuitem():
+        req = request.get_json(force=True)
+        try:
+            flavour = req.get('flavour')
+            price = float(req.get('price'))
+            menu_id = int(req.get('id'))
+            description = req.get('description')
+            img_url = req.get('imgURL')
+            menuitem = MenuItemModel.query.get(menu_id)
+            menuitem.flavour = flavour
+            menuitem.price = price
+            menuitem.description = description
+            menuitem.image_url = img_url
+            app.db.session.add(menuitem)
+            app.db.session.commit()
+            return jsonify({"message": "success"})
+        except:
+            return jsonify({"message": "Could not update menuitem"})
+    
+    @staticmethod
+    @app.route("/remove-item", methods=['POST'])
+    def remove_menuitem():
+        req = request.get_json(force=True)
+        try:
+            menu_id = int(req.get('id'))
+            app.db.session.execute(text("DELETE FROM orderitems where menuitem_id= :mid"), {"mid": menu_id})
+            app.db.session.execute(text("DELETE FROM menuitems_ingredients where menuitem_id= :mid"), {"mid": menu_id})
+            app.db.session.execute(text("DELETE FROM menuitems where id= :mid"), {"mid": menu_id})
+            app.db.session.commit()
+            return jsonify({"message": "Success"})
+        except:
+            return jsonify({"message": "Could not remove item"})
+
 
     @ staticmethod
     @ app.route("/ingredients", methods=['GET'])
@@ -315,6 +414,41 @@ class Routes():
         else:
             response = ingredient_schema.dump(ingredients)
             return jsonify(response)
+
+    @staticmethod
+    @app.route("/weeks-ingredients", methods=['GET'])
+    def get_ingredients_for_week():
+        week_num = datetime.now().isocalendar()[1]
+        WEEK  = week_num - 1 # as it starts with 0 and you want week to start from sunday
+        startdate = time.asctime(time.strptime('%s %d 0' % (datetime.now().year, WEEK), '%Y %W %w')) 
+        startdate = datetime.strptime(startdate, '%a %b %d %H:%M:%S %Y') 
+        dates = [startdate.strftime('%Y-%m-%d')] 
+        
+        for i in range(1, 7): 
+            day = startdate + timedelta(days=i)
+            dates.append(day.strftime('%Y-%m-%d'))
+        
+        ingredients = []
+        rows = app.db.session.execute(text("SELECT i.name FROM orders o JOIN orderitems oi ON o.id = oi.order_id JOIN menuitems m ON m.id = oi.menuitem_id JOIN menuitems_ingredients mi ON m.id = mi.menuitem_id JOIN ingredients i ON i.id = mi.ingredient_id WHERE o.created_on >= :bdate AND o.created_on <= :edate GROUP BY i.name"), {"bdate": dates[0], "edate":dates[-1]}).fetchall()
+        for row in rows:
+            ingredients.append(list(row)[0])
+        
+        return jsonify(ingredients)
+
+    @staticmethod
+    @app.route('/ingredients/add', methods=['POST'])
+    def add_ingredient():
+        req = request.get_json(force=True)
+        new_items = req.get('new_items')
+
+        for item in new_items:
+            iitem = IngredientModel(
+                name = item,
+                in_stock = False,
+            )
+            app.db.session.add(iitem)
+        app.db.session.commit()
+        return jsonify({"message": "Successfully added ingredients"})
 
     @staticmethod
     @app.route('/ingredients/setstock', methods=['POST'])
