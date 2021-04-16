@@ -151,16 +151,32 @@ class Routes():
 
         # TODO - Validate user data @Deniz
         username = req.get('username')
+        email = req.get('email')
 
         # Check if the user already exists
-        user = UserModel.query.filter_by(username=username).first()
+        user_check = UserModel.query.filter_by(username=username).first()
+
+        # Check if a user with email address already exists
+        email_check = UserModel.query.filter_by(email=email).first()
 
         # Create and insert new user
-        if user is None:
+        if user_check is not None:
+            return make_response(
+                {
+                    'message': 'Username {} already exists'.format(username)
+                }, 401)
+
+        elif email_check is not None:
+            return make_response(
+                {
+                    'message': 'Email address {} is already in use'.format(email)
+                }, 401)
+
+        else:
             user = UserModel(
                 username=username,
-                first_name=req.get('firstname'),
-                last_name=req.get('lastname'),
+                firstname=req.get('firstname'),
+                lastname=req.get('lastname'),
                 password=req.get('password'),
                 email=req.get('email'),
                 address=req.get('address')
@@ -169,7 +185,6 @@ class Routes():
             app.db.session.add(user)
             app.db.session.commit()
             return make_response('Successfully registered.', 201)
-        return make_response('User already exists. Please Log in', 401)
 
     @ staticmethod
     @ app.route("/users", methods=['GET'])
@@ -194,8 +209,8 @@ class Routes():
             response = user_schema.dump(users)
             return (jsonify(response))
 
-    @staticmethod
-    @app.route("/users/remove", methods=['POST'])
+    @ staticmethod
+    @ app.route("/users/remove", methods=['POST'])
     def remove_user():
         req = request.get_json(force=True)
         try:
@@ -231,9 +246,9 @@ class Routes():
             response = order_schema.dump(orders)
             return jsonify(response)
 
-    @staticmethod
-    @app.route("/orders/add", methods=['POST'])
-    @token_required
+    @ staticmethod
+    @ app.route("/orders/add", methods=['POST'])
+    @ token_required
     def add_new_order(customer: UserModel):
         """
         Adds a new order to the database
@@ -316,8 +331,8 @@ class Routes():
             response = ingredient_schema.dump(ingredients)
             return jsonify(response)
 
-    @staticmethod
-    @app.route('/ingredients/setstock', methods=['POST'])
+    @ staticmethod
+    @ app.route('/ingredients/setstock', methods=['POST'])
     def set_stock():
         req = request.get_json(force=True)
         try:
@@ -340,8 +355,8 @@ class Routes():
 
         return (jsonify({'res': res}))
 
-    @staticmethod
-    @app.errorhandler(HTTPException)
+    @ staticmethod
+    @ app.errorhandler(HTTPException)
     def http_errors_to_json(error: HTTPException):
         """
         General error handler to ensure that the server always returns JSON
