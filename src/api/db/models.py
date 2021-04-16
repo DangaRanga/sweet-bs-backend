@@ -82,8 +82,8 @@ class UserModel(app.db.Model):
     )
 
     # Relationships with other tables
-    # _orders_placed = app.db.relationship(
-    #     "OrderModel", cascade="all, delete, delete-orphan", backref="user")
+    _orders_placed = app.db.relationship(
+        "OrderModel", cascade="all, delete, delete-orphan", backref="user")
 
     # Class methods
     def __repr__(self):

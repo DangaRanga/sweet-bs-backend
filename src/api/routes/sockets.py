@@ -2,6 +2,8 @@ import sys
 from typing import Set
 from api.db.models import MenuItemCategoryModel
 from api.db.schemas import MenuItemCategorySchema
+from api.db.models import MenuItemModel
+from api.db.schemas import MenuItemSchema
 from api.db.models import IngredientModel
 from api.db.schemas import IngredientSchema
 from api.db.models import UserModel
